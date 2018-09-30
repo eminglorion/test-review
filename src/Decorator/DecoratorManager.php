@@ -5,6 +5,7 @@ namespace src\Decorator;
 use DateTime;
 use Exception;
 use Psr\Cache\CacheItemPoolInterface;
+use Psr\Cache\InvalidArgumentException;
 use Psr\Log\LoggerInterface;
 use src\Integration\DataProvider;
 
@@ -25,6 +26,9 @@ class DecoratorManager extends DataProvider
         $this->cache = $cache;
     }
 
+    /**
+     * @param LoggerInterface $logger
+     */
     public function setLogger(LoggerInterface $logger)
     {
         $this->logger = $logger;
@@ -51,15 +55,24 @@ class DecoratorManager extends DataProvider
                 );
 
             return $result;
+        } catch (InvalidArgumentException $e) {
+            if (isset($this->logger)) {
+                $this->logger->critical('Error');
+            }
+            return parent::get($input);
         } catch (Exception $e) {
-            $this->logger->critical('Error');
+            throw $e;
         }
-
-        return [];
     }
 
-    public function getCacheKey(array $input)
+    /**
+     * @param array $logger
+     *
+     * @return string
+     */
+    protected function getCacheKey(array $input)
     {
+        ksort($input);
         return json_encode($input);
     }
 }
